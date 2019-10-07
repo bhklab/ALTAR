@@ -12,7 +12,9 @@ $ python label.py
 ```
 ## Dependencies
 The app should be run with python3 and uses the following libraries:
-numpy
-pandas
-PyQt5
-pyqtgraph
+* numpy
+* pandas
+* PyQt5
+* pyqtgraph
+
+
