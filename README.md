@@ -6,3 +6,7 @@ In order to start the app, simply log into the data transfer node on the HPC4Hea
 ```bash
 $ ssh -X -p 22 username@172.27.23.173 
 ```
+and run the main label.py script from the command line.
+```bash
+$ python label.py
+```
