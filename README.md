@@ -4,4 +4,5 @@ label_artifacts is an application for manually labelling CT image datasets. In p
 ## Usage
 In order to start the app, simply log into the data transfer node on the HPC4Health cluster with X11 forwarding enabled.
 ```bash
-$ ssh -X -p 22 username@172.27.23.173 ```
+$ ssh -X -p 22 username@172.27.23.173 
+```
