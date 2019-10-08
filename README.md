@@ -19,3 +19,10 @@ The app should be run with python3 and uses the following libraries:
 * pyqtgraph
 
 Or order to see the image display GUI you must also have an X11 forwarder like [xterm](http://xquartz.macosforge.org/landing/) installed on your local machine.
+
+## Edits
+If you want to change the directories from which images are retrieved, or the location where your labels are saved, edit lines 35-37 in `label.py`:
+```python
+self.img_path = "/cluster/projects/bhklab/RADCURE/img/"                  # Path to image directory (edit this here)
+self.csv_path = "/cluster/home/carrowsm/logs/label/artifact_labels.csv"  # File containing the labels of the images
+```
