@@ -2,9 +2,10 @@ import os
 import time
 import numpy as np
 import pandas as pd
-# from PyQt5.QtWidgets import QApplication, QWidget
 import pyqtgraph as pg
 
+import warnings
+warnings.filterwarnings("ignore")
 
 '''
 A python script which provides a command line interface to
@@ -21,7 +22,9 @@ TODO: Try writing something that can be run remotely.
 $ ssh -X -p 10022 username@172.27.23.163   # Login node (UHN network)
 $ ssh -X -p 5500 carrowsm@192.75.165.28    # Login node (remote)
 
-matplotlib figures should appear on your local machine as you use the app.
+A pyqtgraph GUI should appear on your local machine as you use the app.
+
+
 '''
 
 
@@ -81,10 +84,12 @@ class LabelImageApp(object):
         """
         # Load DF if there is a CSV
         if os.access(self.csv_path, os.F_OK) :
-            df = pd.read_csv(self.csv_path, dtype=str, na_values=['nan', 'NaN'], index_col="p_index")
-
-            # Find the first artifact status which is NaN (last_valid_index gives last non-NaN)
-            current_patient = df["has_artifact"].last_valid_index() + 1
+            df = pd.read_csv(self.csv_path, index_col="p_index", dtype=str, na_values=['nan', 'NaN', ''])
+            try :
+                # Find the first artifact status which is NaN (last_valid_index gives last non-NaN)
+                current_patient = df["has_artifact"].last_valid_index() + 1
+            except TypeError :
+                current_patient = 0 # If the CSV is empty, start at 1st patient
 
         else : # If there is no CSV, make a dataframe
             # Get all the patient IDs
@@ -97,26 +102,29 @@ class LabelImageApp(object):
             df.index.name = "p_index"           # An ordered index for the patients
             current_patient = 0                 # Set the current patient index to 0
 
-            # Create an emtpy CSV to append the data to each iteration
-            self.init_label_csv()
-
-        # Create a new temporary dataframe
+        # Create a new temporary CSV file
+        # Data will be appended to this every iteration
         with open(self.tmp_path, 'w') as csv:
-            csv.write(",patient_id,has_artifact\n")
+            csv.write("p_index,patient_id,has_artifact\n")
             csv.close()
+
         return df, current_patient
 
 
 
     # --- Interface helper functions --- #
     def startup_message(self) :
-        print("Application open. Your progress will be saved each time you give an answer.")
+        print("Application open.")
         if self.saving :
-            print("Data will be saved to {}.".format(self.csv_path))
+            print("Data will be saved to {} Once you close the program.".format(self.csv_path))
+            print("Data will also be saved to {} every time you label a scan.".format(self.tmp_path))
         else :
             print("WARNING: Results for this run will not be saved.")
         print("A GUI window should open soon with the CT scans.")
-        print("Press Ctrl-C to save and exit anytime.")
+        print("###-----------------------------------------###")
+        print("To close and save your progress, FIRST close the GUI window\n"
+              +"(with the 'x' button) and then press Ctrl-C in the command line.")
+        print("###-----------------------------------------###")
 
     def save_answer(self, answer, index) :
         """Save the df line corresponding to the last answer to CSV"""
@@ -141,7 +149,7 @@ class LabelImageApp(object):
 
         # Close the application
         self.gui.close()
-        print("CLOSING APP")
+        print("\nCLOSING APP")
         exit()
 
 
@@ -158,7 +166,8 @@ class LabelImageApp(object):
             # Load the new image and send to the graphing GUI
             image_file = os.path.join(self.img_path, file_name)
             image = np.load(image_file, mmap_mode="r")
-            self.gui.setImage(image)
+            image = image[:, 50:-175, 75:-75]
+            self.gui.setImage(image.astype(np.float32))
             self.gui.setCurrentIndex(60)
 
 
@@ -198,9 +207,9 @@ if __name__ == '__main__':
     print("Initializing application")
     app = LabelImageApp(saving=True)
 
-    try :
-        # Start the application loop
-        app.main_loop()
-    except :
-        # Handle exit command
-        app.exit_app()  # Exit and save progress
+try :
+    # Start the application loop
+    app.main_loop()
+except KeyboardInterrupt :
+    # Handle exit command
+    app.exit_app()  # Exit and save progress
