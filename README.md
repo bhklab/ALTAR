@@ -18,4 +18,4 @@ The app should be run with python3 and uses the following libraries:
 * pandas
 * pyqtgraph
 
-
+Or order to see the image display GUI you must also have an X11 forwarder like xterm installed on your local machine.
