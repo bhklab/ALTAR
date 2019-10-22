@@ -34,10 +34,16 @@ class LabelImageApp(object):
         super(LabelImageApp, self).__init__()
         self.saving = saving
 
-        # Edit these paths according to your directory sctructure
-        self.img_path = "/cluster/projects/bhklab/RADCURE/img/"                  # Path to image directory (edit this here)
+        ## EDIT THESE FOR YOUR IMAGE QUOTA ##
+        self.start_index = 130        # Index to start at. Program will ignore everything before this
+        self.stop_index  = 145        # Index to stop at. Program will ignore everything after this.
+        ## ------------------------------- ##
+
+        ##  Edit these paths according to your directory sctructure ##
+        self.img_path = "/cluster/projects/bhklab/RADCURE/img/"                  # Path to image directory
         self.csv_path = "/cluster/home/carrowsm/logs/label/artifact_labels.csv"  # File containing the labels of the images
         self.tmp_path = "/cluster/home/carrowsm/logs/label/tmp.csv"              # File for temporary saving
+        ## -------------------------------------------------------- ##
 
         # Check this path exists
         self.verify_path()
@@ -62,7 +68,7 @@ class LabelImageApp(object):
 
     def init_label_csv(self) :
         """Create an empty dataframe with the correct headers and save to csv.
-           This will be appended to as the code program runs."""
+           This will be appended to as the program runs."""
         temp_df = pd.DataFrame(data={"patient_id": [], "has_artifact": []})
         temp_df.to_csv(self.csv_path)
 
@@ -85,11 +91,13 @@ class LabelImageApp(object):
         # Load DF if there is a CSV
         if os.access(self.csv_path, os.F_OK) :
             df = pd.read_csv(self.csv_path, index_col="p_index", dtype=str, na_values=['nan', 'NaN', ''])
+
             try :
                 # Find the first artifact status which is NaN (last_valid_index gives last non-NaN)
-                current_patient = df["has_artifact"].last_valid_index() + 1
+                df_restrict = df.loc[self.start_index : self.stop_index]  # Restrict dataframe (both start and stop are included)
+                current_patient = df_restrict["has_artifact"].last_valid_index() + 1
             except TypeError :
-                current_patient = 0 # If the CSV is empty, start at 1st patient
+                current_patient = self.start_index # If the CSV is empty, start at 1st patient
 
         else : # If there is no CSV, make a dataframe
             # Get all the patient IDs
@@ -100,7 +108,7 @@ class LabelImageApp(object):
             # Create a dataframe indexed by integers
             df = pd.DataFrame(data={"patient_id": ids, "has_artifact": np.nan}, dtype=str)
             df.index.name = "p_index"           # An ordered index for the patients
-            current_patient = 0                 # Set the current patient index to 0
+            current_patient = self.start_index  # Set the current patient index to 0
 
         # Create a new temporary CSV file
         # Data will be appended to this every iteration
@@ -155,9 +163,8 @@ class LabelImageApp(object):
 
     # --- Main interface loop --- #
     def main_loop(self) :
-        nb_patients = len(self.label_df["patient_id"].values) # Number of patients in data set
 
-        while self.index < nb_patients :
+        while self.index < self.stop_index+1 :
             """ MAIN APP LOOP """
             """Each iteration in this loop plots and labels one patient's scan"""
             patient_id = self.label_df["patient_id"].loc[self.index]
@@ -169,7 +176,6 @@ class LabelImageApp(object):
             image = image[:, 50:-175, 75:-75]
             self.gui.setImage(image.astype(np.float32))
             self.gui.setCurrentIndex(60)
-
 
             # Ask the user if they see an artifact
             message = "Does patient {} have an artifact? [y]/n: ".format(patient_id)
@@ -192,10 +198,9 @@ class LabelImageApp(object):
             # Save the appropriate line to the CSV
             self.save_answer(answer, self.index)
 
-
             # Move to the next patient
             self.index = self.index + 1
-            """ END OF LOOP """
+            """ END OF ITERATION """
 
         # If we're outside the loop, we've reached the last patient
         print("Last patient label complete. THANK YOU!")
@@ -210,6 +215,12 @@ if __name__ == '__main__':
 try :
     # Start the application loop
     app.main_loop()
+
 except KeyboardInterrupt :
     # Handle exit command
+    print("App exited from command line.")
+    app.exit_app()  # Exit and save progress
+except :
+    # Handle unexpected issues
+    print("Something Went Wrong.")
     app.exit_app()  # Exit and save progress
