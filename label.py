@@ -20,7 +20,7 @@ $ ssh -X -p 22 username@172.27.23.173      # Data transfer node (UHN network)
 This implementation uses the H4H data transfer node.
 TODO: Try writing something that can be run remotely.
 $ ssh -X -p 10022 username@172.27.23.163   # Login node (UHN network)
-$ ssh -X -p 5500 carrowsm@192.75.165.28    # Login node (remote)
+$ ssh -X -p 5500 username@192.75.165.28    # Login node (remote)
 
 A pyqtgraph GUI should appear on your local machine as you use the app.
 
