@@ -35,8 +35,8 @@ class LabelImageApp(object):
         self.saving = saving
 
         ## EDIT THESE FOR YOUR IMAGE QUOTA ##
-        self.start_index = 130        # Index to start at. Program will ignore everything before this
-        self.stop_index  = 145        # Index to stop at. Program will ignore everything after this.
+        self.start_index = 0        # Index to start at. Program will ignore everything before this
+        self.stop_index  = 458      # Index to stop at. Program will ignore everything after this.
         ## ------------------------------- ##
 
         ##  Edit these paths according to your directory sctructure ##
@@ -139,10 +139,10 @@ class LabelImageApp(object):
         if self.saving :
             i = index
             row = "{},{},{}\n".format(i,
-                                    self.label_df["patient_id"].loc[i],
-                                    self.label_df["has_artifact"].loc[i])
+                                      self.label_df["patient_id"].loc[i],
+                                      self.label_df["has_artifact"].loc[i])
             # Save the label that was just made into a CSV.
-            # This was we don't lose data if the file unexpectedly closes
+            # This way we don't lose data if the file unexpectedly closes
             with open(self.tmp_path, 'a') as csv:
                 csv.write(row)
                 csv.close()
@@ -178,20 +178,24 @@ class LabelImageApp(object):
             self.gui.setCurrentIndex(60)
 
             # Ask the user if they see an artifact
-            message = "Does patient {} have an artifact? [y]/n: ".format(patient_id)
+            message = "Does patient {} have an artifact? s/w/n: ".format(patient_id)
             answer = input(message)
 
             # Process the answer and update the df (1=has artifact, 0=no artifact)
-            if answer == '' or answer == 'y' or answer == 'yes' :
-                print("You answered yes")
+            if answer == 's' or answer == 'S' or answer == 'strong' :
+                print("You answered STRONG artifact")
+                self.label_df.at[self.index, "has_artifact"] = '2'
+
+            elif answer == 'w' or answer == 'W' or answer == 'weak' :
+                print("You answered WEAK artifact")
                 self.label_df.at[self.index, "has_artifact"] = '1'
 
-            elif answer == 'n' or answer == 'no':
-                print("You answered no")
+            elif answer == 'n' or answer == 'N' or answer == 'no':
+                print("You answered NO artifact")
                 self.label_df.at[self.index, "has_artifact"] = '0'
 
             else :
-                print("Not a valid answer. Please hit [ENTER] for yes, or type 'y' or 'n'.")
+                print("Not a valid answer. \nPlease enter 's' for STRONG, 'w' for WEAK, 'n' for NONE.")
                 continue # Return to the top of the loop and ask user again
 
 
