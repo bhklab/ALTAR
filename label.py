@@ -18,13 +18,8 @@ $ ssh -X -p 22 username@172.27.23.173      # Data transfer node (UHN network)
 2. Run this script with the command $ python label.py
 ---------
 This implementation uses the H4H data transfer node.
-TODO: Try writing something that can be run remotely.
-$ ssh -X -p 10022 username@172.27.23.163   # Login node (UHN network)
-$ ssh -X -p 5500 username@192.75.165.28    # Login node (remote)
 
 A pyqtgraph GUI should appear on your local machine as you use the app.
-
-
 '''
 
 
@@ -80,7 +75,7 @@ class LabelImageApp(object):
                     CSV is not being created for the first time).
             The label_df has the following format:
         index   patient_id    has_artifact
-        0       12345         1             # 1=yes, 0=no artifact
+        0       12345         1             # 2=strong, 1=weak, 0=no artifact
         1       23456         0
         2       45667         NaN           # Patients who have not been labeled yet get NaN status
         3       45678         NaN           # The app moves through this DF in order of index
