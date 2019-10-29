@@ -64,7 +64,7 @@ class LabelImageApp(object):
     def init_label_csv(self) :
         """Create an empty dataframe with the correct headers and save to csv.
            This will be appended to as the program runs."""
-        temp_df = pd.DataFrame(data={"patient_id": [], "has_artifact": []})
+        temp_df = pd.DataFrame(data={"patient_id": [], "has_artifact": [], "a_slice":[]})
         temp_df.to_csv(self.csv_path)
 
     def init_label_df(self) :
@@ -74,11 +74,11 @@ class LabelImageApp(object):
                     Find the current patient ID (this is the first NaN if the
                     CSV is not being created for the first time).
             The label_df has the following format:
-        index   patient_id    has_artifact
-        0       12345         1             # 2=strong, 1=weak, 0=no artifact
-        1       23456         0
-        2       45667         NaN           # Patients who have not been labeled yet get NaN status
-        3       45678         NaN           # The app moves through this DF in order of index
+        index   patient_id    has_artifact   a_slice
+        0       12345         1              98      # 2=strong, 1=weak, 0=no artifact
+        1       23456         0              NaN     #
+        2       45667         NaN                    # Patients who have not been labeled yet get NaN status
+        3       45678         NaN                    # The app moves through this DF in order of index
         .        .             .
         .        .             .
         .        .             .
@@ -101,14 +101,14 @@ class LabelImageApp(object):
                 ids.append(file.split("_")[0])   # Get the ID from the filename
 
             # Create a dataframe indexed by integers
-            df = pd.DataFrame(data={"patient_id": ids, "has_artifact": np.nan}, dtype=str)
+            df = pd.DataFrame(data={"patient_id": ids, "has_artifact": np.nan, "a_slice":np.nan}, dtype=str)
             df.index.name = "p_index"           # An ordered index for the patients
             current_patient = self.start_index  # Set the current patient index to 0
 
         # Create a new temporary CSV file
         # Data will be appended to this every iteration
         with open(self.tmp_path, 'w') as csv:
-            csv.write("p_index,patient_id,has_artifact\n")
+            csv.write("p_index,patient_id,has_artifact,a_slice\n")
             csv.close()
 
         return df, current_patient
@@ -129,13 +129,14 @@ class LabelImageApp(object):
               +"(with the 'x' button) and then press Ctrl-C in the command line.")
         print("###-----------------------------------------###")
 
-    def save_answer(self, answer, index) :
+    def save_answer(self, index) :
         """Save the df line corresponding to the last answer to CSV"""
         if self.saving :
             i = index
-            row = "{},{},{}\n".format(i,
+            row = "{},{},{},{}\n".format(i,
                                       self.label_df["patient_id"].loc[i],
-                                      self.label_df["has_artifact"].loc[i])
+                                      self.label_df["has_artifact"].loc[i],
+                                      self.label_df["a_slice"].loc[i])
             # Save the label that was just made into a CSV.
             # This way we don't lose data if the file unexpectedly closes
             with open(self.tmp_path, 'a') as csv:
@@ -148,7 +149,7 @@ class LabelImageApp(object):
         """Save the entire dataframe in its current state"""
         if self.saving :
             print("\nSaving Progress to: ", self.csv_path)
-            self.label_df.to_csv(self.csv_path)
+            self.label_df.to_csv(self.csv_path, na_rep='nan')
 
         # Close the application
         self.gui.close()
@@ -180,10 +181,22 @@ class LabelImageApp(object):
             if answer == 's' or answer == 'S' or answer == 'strong' :
                 print("You answered STRONG artifact")
                 self.label_df.at[self.index, "has_artifact"] = '2'
+                output = input("Press [ENTER] when looking at largest artifact slice.")
+                if output == '' :
+                    artifact_slice = self.gui.currentIndex
+                    self.label_df.at[self.index, "a_slice"] = str(artifact_slice)
+                    print("Strongest slice: {}".format(artifact_slice))
 
             elif answer == 'w' or answer == 'W' or answer == 'weak' :
                 print("You answered WEAK artifact")
                 self.label_df.at[self.index, "has_artifact"] = '1'
+                output = input("Press [ENTER] when looking at largest artifact slice.")
+                if output == '' :
+                    artifact_slice = self.gui.currentIndex
+                    self.label_df.at[self.index, "a_slice"] = str(artifact_slice)
+                    print("Strongest slice: {}".format(artifact_slice))
+
+
 
             elif answer == 'n' or answer == 'N' or answer == 'no':
                 print("You answered NO artifact")
@@ -195,7 +208,7 @@ class LabelImageApp(object):
 
 
             # Save the appropriate line to the CSV
-            self.save_answer(answer, self.index)
+            self.save_answer(self.index)
 
             # Move to the next patient
             self.index = self.index + 1
@@ -217,7 +230,7 @@ try :
 
 except KeyboardInterrupt :
     # Handle exit command
-    print("App exited from command line.")
+    print("\nApp exited from command line.")
     app.exit_app()  # Exit and save progress
 except :
     # Handle unexpected issues
