@@ -201,6 +201,11 @@ class LabelImageApp(object):
             elif answer == 'n' or answer == 'N' or answer == 'no':
                 print("You answered NO artifact")
                 self.label_df.at[self.index, "has_artifact"] = '0'
+                output = input("Press [ENTER] when looking at a central slice in the mouth.")
+                if output == '' :
+                    artifact_slice = self.gui.currentIndex
+                    self.label_df.at[self.index, "a_slice"] = str(artifact_slice)
+                    print("Strongest slice: {}".format(artifact_slice))
 
             else :
                 print("Not a valid answer. \nPlease enter 's' for STRONG, 'w' for WEAK, 'n' for NONE.")
