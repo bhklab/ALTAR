@@ -14,7 +14,16 @@ self.csv_path = "/cluster/home/username/logs/artifact_labels.csv"  # File contai
 
  You will also have to edit line 40 in `label.py`, which points to a temporary CSV called `tmp.csv`. This file can also be anywhere you would like.`tmp.csv` will save data after you label each patient. If the app crashes unexpectedly and does not save successfully to `artifact_labels.csv`, you can go into `tmp.csv` to recover your work.
 
+ Finally, edit line 33 and 34 in `label.py` to cover the patient indices in the data set that you would like to label.
+ ```python
+ ## EDIT THESE FOR YOUR IMAGE QUOTA ##
+ self.start_index = 0        # Index to start at. Program will ignore everything before this
+ self.stop_index  = 458      # Index to stop at. Program will ignore everything after this.
+ ## ------------------------------- ##
+```
+
 ## Usage
+### From UHN Network (Tested with UHN-wireless-corporate)
 In order to start the app, simply log into the data transfer node on the HPC4Health cluster with X11 forwarding enabled. This has only been tested on the UHN corporate-wireless network.
 ```bash
 $ ssh -X -p 22 username@172.27.23.173
@@ -23,6 +32,17 @@ and run the main label.py script from the command line.
 ```bash
 $ python label.py
 ```
+### Off the UHN Network
+First, use OTP authentication, then log into the H4H login node using the remote port and IP with the `-X` option:
+```bash
+$ ssh -X -p 5500 username@192.75.165.28
+```
+From the login node, login to the data transfer node (also using the `-X` option).
+```bash
+$ ssh -X h4huhndata1
+```
+This should allow the application to run correctly with X-forwarding enabled. This can be done anywhere (e.g. at home).
+
 ## Dependencies
 The app should be run with python3 and uses the following libraries:
 * os
