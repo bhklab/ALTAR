@@ -35,7 +35,8 @@ class LabelImageApp(object):
         ## ------------------------------- ##
 
         ##  Edit these paths according to your directory sctructure ##
-        self.img_path = "/cluster/projects/bhklab/RADCURE/img/"                  # Path to image directory
+        # self.img_path = "/cluster/projects/bhklab/RADCURE/img/"                  # Path to image directory
+        self.img_path = "/cluster/projects/radiomics/Temp/RADCURE-npy/img"
         self.csv_path = "/cluster/home/carrowsm/logs/label/artifact_labels.csv"  # File containing the labels of the images
         self.tmp_path = "/cluster/home/carrowsm/logs/label/tmp.csv"              # File for temporary saving
         ## -------------------------------------------------------- ##
@@ -157,6 +158,14 @@ class LabelImageApp(object):
         exit()
 
 
+    def normalize(self, img, MIN=-1000.0, MAX=2000.0) :
+        # Normalize the image (var = 1, mean = 0)
+        img = img.astype(np.float32)
+        img = np.clip(img, MIN, MAX)
+        img = (img - MIN) / (MAX - MIN)
+        return img
+
+
     # --- Main interface loop --- #
     def main_loop(self) :
 
@@ -170,7 +179,13 @@ class LabelImageApp(object):
             image_file = os.path.join(self.img_path, file_name)
             image = np.load(image_file, mmap_mode="r")
             image = image[:, 50:-175, 75:-75]
-            self.gui.setImage(image.astype(np.float32))
+
+            # Convert the image to 16-bit integer
+            image = image.astype(np.int16)
+            # Normalize the image
+            image = self.normalize(image)
+
+            self.gui.setImage(image)
             self.gui.setCurrentIndex(60)
 
             # Ask the user if they see an artifact
