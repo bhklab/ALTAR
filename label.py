@@ -158,7 +158,7 @@ class LabelImageApp(object):
         exit()
 
 
-    def normalize(self, img, MIN=-1000.0, MAX=2000.0) :
+    def normalize(self, img, MIN=-1000.0, MAX=1000.0) :
         # Normalize the image (var = 1, mean = 0)
         img = img.astype(np.float32)
         img = np.clip(img, MIN, MAX)
