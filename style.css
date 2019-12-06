@@ -1,0 +1,43 @@
+QWidget {
+    background-color: #3e393b;
+}
+QLabel {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 1px,1px,1px,1px, solid;
+}
+
+QPushButton#label-slice{
+    width: 200px;
+    height: 40px;
+    background-color:#3e393b;
+    color: white;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border: 0px black none;
+}
+
+QPushButton#label-slice-center{
+    width: 200px;
+    height: 40px;
+    background-color:#3e393b;
+    color: white;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border-style: solid;
+    border-color: #8a8a8a;
+    border-width: 0px 1px 0px 1px;
+}
+
+QPushButton:hover#label-slice,:hover#label-slice-center{
+    color: white;
+    background-color: #4a4a4a;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border: 0 black none;
+}
