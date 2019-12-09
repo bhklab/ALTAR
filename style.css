@@ -6,7 +6,7 @@ QLabel {
     font-size: 22px;
     font-family: "Optima", sans-serif;
     font-weight: normal;
-    border: 1px,1px,1px,1px, solid;
+    border: 0 black none;
 }
 
 QPushButton#label-slice{
@@ -68,10 +68,19 @@ QPushButton:hover#login{
 
 QLineEdit {
     color: white;
-    background-color: #4a4a4a;
+    background-color: #616161;
     font-size:18px;
     font-family: "Optima", serif;
     font-weight: 50;
     width: 100px;
     height: 1.5em;
+}
+
+QLabel#loading {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+    image: url(loader.gif)
 }

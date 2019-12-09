@@ -5,12 +5,15 @@ from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
 import os
+import io
 
 import numpy as np
-from paramiko import SSHClient
+import paramiko
 from getpass import getpass
 
 from label import LabelImageApp
+
+import time
 
 
 class MainWindow(QWidget):
@@ -47,9 +50,9 @@ class MainWindow(QWidget):
         s_button.setObjectName("label-slice")
         w_button.setObjectName("label-slice-center")
         n_button.setObjectName("label-slice")
-        s_button.clicked.connect(lambda: self.on_click(result="Strong"))
-        w_button.clicked.connect(lambda: self.on_click(result="Weak"))
-        n_button.clicked.connect(lambda: self.on_click(result="None"))
+        s_button.clicked.connect(lambda: self.on_click(result="s"))
+        w_button.clicked.connect(lambda: self.on_click(result="w"))
+        n_button.clicked.connect(lambda: self.on_click(result="n"))
 
         hbox.addStretch()
         hbox.addWidget(s_button)
@@ -120,8 +123,16 @@ class MainWindow(QWidget):
         user.setPlaceholderText("Username")
         pw.setPlaceholderText("Password")
 
+        progress = QHBoxLayout()
+        self.message = QLabel("Enter your H4H username and password")
+        self.icon = QLabel("")
+        progress.addWidget(self.message)
+        progress.addWidget(self.icon)
+        progress.addStretch()
+
         # Prompt user for their h4h cridentials
         vbox.addStretch()
+        vbox.addLayout(progress)
         vbox.addWidget(user)
         vbox.addWidget(pw)
         vbox.addWidget(submit_button)
@@ -129,34 +140,51 @@ class MainWindow(QWidget):
         self.setLayout(vbox)
 
     def authenticate(self, username, password, auth_widget) :
-        # Remove the authentication widget
-        QWidget().setLayout(auth_widget.layout())
+
         try :
             self.sftp = self.setup_remote(username, password)
             print("Authentication Successful")
+            # Remove the authentication widget
+            QWidget().setLayout(auth_widget.layout())
+            self.initUI()
 
         except :
-            # self.initUI() # Dev mode only
+            # Remove the authentication widget
+            QWidget().setLayout(auth_widget.layout())
             print("Authentication Unsuccessful")
+
+            # Ask for authentication again
             self.init_authentiation()
-        self.initUI()
+
 
 
     def setup_remote(self, username, password) :
         host = "172.27.23.173"
         port = 22
 
-        ssh = SSHClient()
-        ssh.load_system_host_keys()
-        ssh.connect(host, port=port,
-                    username=username, password=password)
-        sftp_client = ssh.open_sftp()
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.connect(host, port=port,
+                       username=username, password=password)
+        sftp_client = client.open_sftp()
+
+        # self.t = paramiko.Transport(host, port)
+        # self.t.window_size=2147483647
+        # self.t.packetizer.REKEY_BYTES = pow(2, 40)
+        # self.t.packetizer.REKEY_PACKETS = pow(2, 40)
+        # self.t.connect(username=username, password=password)
+        # sftp_client = paramiko.SFTPClient.from_transport(self.t)
+
         return sftp_client
 
     def load_img(self, path) :
         # Load the new image and send to the graphing GUI
-        remote_file = self.sftp.open(path)
-        image = np.load(remote_file)
+        self.sftp.get(path, "tmp.npy")
+
+        image = np.load("tmp.npy")
+
+        os.remove("tmp.npy")
+
         image = image[:, 50:-175, 75:-75]
 
         # Convert the image to 16-bit integer
@@ -165,6 +193,8 @@ class MainWindow(QWidget):
         image = self.app_functions.normalize(image)
 
         self.imageWidget.setImage(image)
+
+
 
     def keyPressEvent(self, e):
         """ Handle key press events"""
@@ -181,7 +211,9 @@ class MainWindow(QWidget):
         img_path = os.path.join(self.app_functions.img_path, file_name)
 
         # Update Image widget
+        print("Loading Image")
         self.load_img(img_path)
+        print("Image transferred")
 
         # Update text header
         self.text_header.setText(f"Current patient: {self.current_patient}")
@@ -197,11 +229,15 @@ def main():
         # Save progress
         main.app_functions.exit_app()
 
+        # Close remote connections
+        main.sftp.close()
+        # main.t.close()
+
         # Close GUI
-        self.app.close()
+        app.quit()
 
         # Close python interpreter
-        exit()
+        sys.exit()
 
 if __name__ == '__main__':
     main()

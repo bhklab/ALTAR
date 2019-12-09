@@ -40,7 +40,8 @@ class LabelImageApp(object):
         # self.img_path = "/cluster/projects/bhklab/RADCURE/img/"                  # Path to image directory
         self.img_path = "/cluster/projects/radiomics/Temp/RADCURE-npy/img"
         self.csv_path = "/cluster/home/carrowsm/logs/label/artifact_labels.csv"  # File containing the labels of the images
-        self.tmp_path = "/cluster/home/carrowsm/logs/label/tmp.csv"              # File for temporary saving
+        # self.tmp_path = "/cluster/home/carrowsm/logs/label/tmp.csv"
+        self.tmp_path = "tmp.csv"            # File for temporary saving
         ## -------------------------------------------------------- ##
 
         # Check this path exists
@@ -74,14 +75,18 @@ class LabelImageApp(object):
 
     def load_remote_df(self) :
         """ Similar to init_label_df, but uses sftp"""
-        remote_csv = self.sftp.open(self.csv_path)
+        remote_csv = self.sftp.open(self.csv_path, "r", 32768)
         df = pd.read_csv(remote_csv, index_col="p_index", dtype=str, na_values=['nan', 'NaN', ''])
+        remote_csv.close()
 
         # Create a new temporary CSV file
         # Data will be appended to this every iteration
-        with self.sftp.open(self.tmp_path, "w") as csv:
-            csv.write("p_index,patient_id,has_artifact,a_slice\n")
+        # with self.sftp.open(self.tmp_path, "w") as csv:
+        #     csv.write("p_index,patient_id,has_artifact,a_slice\n")
             # csv.close()
+        # Local temp file
+        with open(self.tmp_path, "w") as csv :
+            csv.write("p_index,patient_id,has_artifact,a_slice\n")
 
         try :
             # Find the first artifact status which is NaN (last_valid_index gives last non-NaN)
@@ -164,11 +169,10 @@ class LabelImageApp(object):
                                       self.label_df["patient_id"].loc[i],
                                       self.label_df["has_artifact"].loc[i],
                                       self.label_df["a_slice"].loc[i])
-            # Save the label that was just made into a CSV.
+            # Save the label that was just made to a local CSV.
             # This way we don't lose data if the file unexpectedly closes
-            with self.sftp.open(self.tmp_path, 'a') as csv:
+            with open(self.tmp_path, "a") as csv :
                 csv.write(row)
-                # csv.close()
         else :
             return
 
@@ -178,7 +182,7 @@ class LabelImageApp(object):
             print("\nSaving Progress to: ", self.csv_path)
 
             with self.sftp.open(self.csv_path, "w") as f:
-                f.write(self.label_df.to_csv(self.csv_path, na_rep='nan'))
+                f.write(self.label_df.to_csv(na_rep='nan'))
 
         # Close the application
         # self.gui.close()
@@ -205,6 +209,7 @@ class LabelImageApp(object):
             self.label_df.at[index, "a_slice"] = str(slice)
 
             # Save this label to a csv
+            print("Saving answer")
             self.save_answer(index)
 
         else :
