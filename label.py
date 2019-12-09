@@ -25,9 +25,11 @@ A pyqtgraph GUI should appear on your local machine as you use the app.
 
 class LabelImageApp(object):
     """Command line interface to label images in a dataset."""
-    def __init__(self, saving=True):
+    def __init__(self, saving=True, img_widget=None, sftp_client=None):
         super(LabelImageApp, self).__init__()
         self.saving = saving
+
+        self.sftp = sftp_client
 
         ## EDIT THESE FOR YOUR IMAGE QUOTA ##
         self.start_index = 0        # Index to start at. Program will ignore everything before this
@@ -42,16 +44,18 @@ class LabelImageApp(object):
         ## -------------------------------------------------------- ##
 
         # Check this path exists
-        self.verify_path()
+        # self.verify_path()
 
         # Create the dataframe containing the labels
-        self.label_df, self.index = self.init_label_df()
+        # self.label_df, self.index = self.init_label_df()
+        self.label_df, self.index = self.load_remote_df()
+
 
         # Initiate the pyqtgraph plot
-        self.gui = pg.image(title="CT Scan Stack")
-
-        # Give the user some helpful messages
-        self.startup_message()
+        # self.gui = pg.image(title="CT Scan Stack")
+        #
+        # # Give the user some helpful messages
+        # self.startup_message()
 
 
 
@@ -67,6 +71,28 @@ class LabelImageApp(object):
            This will be appended to as the program runs."""
         temp_df = pd.DataFrame(data={"patient_id": [], "has_artifact": [], "a_slice":[]})
         temp_df.to_csv(self.csv_path)
+
+    def load_remote_df(self) :
+        """ Similar to init_label_df, but uses sftp"""
+        remote_csv = self.sftp.open(self.csv_path)
+        df = pd.read_csv(remote_csv, index_col="p_index", dtype=str, na_values=['nan', 'NaN', ''])
+
+        # Create a new temporary CSV file
+        # Data will be appended to this every iteration
+        with self.sftp.open(self.tmp_path, "w") as csv:
+            csv.write("p_index,patient_id,has_artifact,a_slice\n")
+            # csv.close()
+
+        try :
+            # Find the first artifact status which is NaN (last_valid_index gives last non-NaN)
+            df_restrict = df.loc[self.start_index : self.stop_index]  # Restrict dataframe (both start and stop are included)
+            current_patient = df_restrict["has_artifact"].last_valid_index() + 1
+        except TypeError :
+            current_patient = self.start_index # If the CSV is empty, start at 1st patient
+
+        return df, current_patient
+
+
 
     def init_label_df(self) :
         """ Dataframe which will store the label for each patient. If a csv with
@@ -140,9 +166,9 @@ class LabelImageApp(object):
                                       self.label_df["a_slice"].loc[i])
             # Save the label that was just made into a CSV.
             # This way we don't lose data if the file unexpectedly closes
-            with open(self.tmp_path, 'a') as csv:
+            with self.sftp.open(self.tmp_path, 'a') as csv:
                 csv.write(row)
-                csv.close()
+                # csv.close()
         else :
             return
 
@@ -150,12 +176,14 @@ class LabelImageApp(object):
         """Save the entire dataframe in its current state"""
         if self.saving :
             print("\nSaving Progress to: ", self.csv_path)
-            self.label_df.to_csv(self.csv_path, na_rep='nan')
+
+            with self.sftp.open(self.csv_path, "w") as f:
+                f.write(self.label_df.to_csv(self.csv_path, na_rep='nan'))
 
         # Close the application
-        self.gui.close()
-        print("\nCLOSING APP")
-        exit()
+        # self.gui.close()
+        # print("\nCLOSING APP")
+        # exit()
 
 
     def normalize(self, img, MIN=-1000.0, MAX=1000.0) :
@@ -165,7 +193,27 @@ class LabelImageApp(object):
         img = (img - MIN) / (MAX - MIN)
         return img
 
+    def process_result(self, result, index=None, slice=None) :
+        if index < self.stop_index+1 :
+            if result == "s" :
+                self.label_df.at[index, "has_artifact"] = '2'
+            elif result == "w" :
+                self.label_df.at[index, "has_artifact"] = '1'
+            elif result == "n" :
+                self.label_df.at[index, "has_artifact"] = '0'
 
+            self.label_df.at[index, "a_slice"] = str(slice)
+
+            # Save this label to a csv
+            self.save_answer(index)
+
+        else :
+            # If we're outside the loop, we've reached the last patient
+            print("Last patient label complete. THANK YOU!")
+            self.exit_app()
+
+
+'''
     # --- Main interface loop --- #
     def main_loop(self) :
 
@@ -256,3 +304,4 @@ except :
     # Handle unexpected issues
     print("Something Went Wrong.")
     app.exit_app()  # Exit and save progress
+'''

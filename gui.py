@@ -10,6 +10,8 @@ import numpy as np
 from paramiko import SSHClient
 from getpass import getpass
 
+from label import LabelImageApp
+
 
 class MainWindow(QWidget):
 
@@ -22,14 +24,10 @@ class MainWindow(QWidget):
         self.setStyleSheet(open('style.css').read())
 
         # Open remote connection to H4H
-        # If this is successful,
+        # If this is successful, initUI will be called
         self.init_authentiation()
 
-        # Initialize the user interface
-        # self.initUI()
 
-        # Plot Initial image
-        # self.load_img("/cluster/home/carrowsm/temp_data/trg_data/1.npy")
 
     def initUI(self) :
         # --- WINDOW --- #
@@ -62,7 +60,7 @@ class MainWindow(QWidget):
         # --- ###### --- #
 
         # ---  TEXT   --- #
-        self.text_header = QLabel("Press [ENTER] to begin.")
+        self.text_header = QLabel("")
         self.text_header.setAlignment(Qt.AlignCenter)
         vbox.addWidget(self.text_header)
         # --- ####### --- #
@@ -76,9 +74,33 @@ class MainWindow(QWidget):
         vbox.addLayout(hbox)
         self.setLayout(vbox)
 
+        # Initialize the data
+        print("Initializing data")
+        self.app_functions = LabelImageApp(saving=True,
+                                           img_widget=self.imageWidget,
+                                           sftp_client=self.sftp)
+        self.current_patient = self.app_functions.index
+        self.text_header.setText(f"Current Patient: {self.current_patient}")
+
+        # Load the first patient in the GUI
+        self.update_display()
+
+
 
     def on_click(self, result=None) :
-        print(result)
+        slice_index = self.imageWidget.currentIndex
+        # Processes the result and updates the label DF
+        self.app_functions.process_result(result,
+                                          index=self.current_patient,
+                                          slice=slice_index)
+
+        # Update current patient index
+        self.current_patient = self.current_patient + 1
+
+        # Plot the new patient in the GUI
+        self.update_display()
+
+
 
     def init_authentiation(self) :
         # We are currently in "authentication mode"
@@ -112,10 +134,12 @@ class MainWindow(QWidget):
         try :
             self.sftp = self.setup_remote(username, password)
             print("Authentication Successful")
-            self.initUI()
+
         except :
-            self.init_authentiation()
+            # self.initUI() # Dev mode only
             print("Authentication Unsuccessful")
+            self.init_authentiation()
+        self.initUI()
 
 
     def setup_remote(self, username, password) :
@@ -130,28 +154,54 @@ class MainWindow(QWidget):
         return sftp_client
 
     def load_img(self, path) :
-        remote_file = self.sftp_client.open(path)
-        X = np.load(remote_file)
-        print(X.shape)
-        self.imageWidget.setImage(X)
+        # Load the new image and send to the graphing GUI
+        remote_file = self.sftp.open(path)
+        image = np.load(remote_file)
+        image = image[:, 50:-175, 75:-75]
+
+        # Convert the image to 16-bit integer
+        image = image.astype(np.int16)
+        # Normalize the image
+        image = self.app_functions.normalize(image)
+
+        self.imageWidget.setImage(image)
 
     def keyPressEvent(self, e):
         """ Handle key press events"""
-        if e.key == "16777220" :
-            # Enter key was hit
+        if e.key == 16777220 :
+            # [Enter] key was hit
             if self.mode == "auth" :
                 print("Authenticating")
             if self.mode == "label" :
                 print("")
 
+    def update_display(self) :
+        patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
+        file_name = str(patient_id) + "_img.npy"
+        img_path = os.path.join(self.app_functions.img_path, file_name)
 
+        # Update Image widget
+        self.load_img(img_path)
+
+        # Update text header
+        self.text_header.setText(f"Current patient: {self.current_patient}")
 
 def main():
     app = QApplication(sys.argv)
     main = MainWindow()
     main.show()
-    sys.exit(app.exec_())
 
+    try :
+        sys.exit(app.exec_())
+    except :
+        # Save progress
+        main.app_functions.exit_app()
+
+        # Close GUI
+        self.app.close()
+
+        # Close python interpreter
+        exit()
 
 if __name__ == '__main__':
     main()
