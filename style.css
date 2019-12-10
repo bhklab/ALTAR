@@ -9,7 +9,52 @@ QLabel {
     border: 0 black none;
 }
 
+QPushButton {
+    /* width: 200px;
+    height: 40px; */
+    background-color:#3e393b;
+    color: white;
+    font-size:18px;
+    font-family: "Optima", serif;
+    font-weight: 200;
+    border: 0px black none;
+}
+
+QPushButton:hover {
+    /* width: 200px;
+    height: 40px; */
+    background-color:#4a4a4a;
+    color: white;
+    font-size:18px;
+    font-family: "Optima", serif;
+    font-weight: 200;
+    border: 0px black none;
+}
+
+
+QPushButton#input {
+    width: 200px;
+    height: 40px;
+    background-color:#3e393b;
+    color: white;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 200;
+    border: 0px black none;
+}
+
+QPushButton:hover#input{
+    color: white;
+    background-color: #4a4a4a;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border: 0 black none;
+}
+
 QPushButton#label-slice{
+    margin-bottom: 10px;
+    padding-bottom: 10px;
     width: 200px;
     height: 40px;
     background-color:#3e393b;
@@ -17,10 +62,13 @@ QPushButton#label-slice{
     font-size:24px;
     font-family: "Optima", serif;
     font-weight: 400;
-    border: 0px black none;
+    /* border: 0px black none; */
+    border-bottom: 2px black solid;
 }
 
 QPushButton#label-slice-center{
+    margin-bottom: 10px;
+    padding-bottom: 10px;
     width: 200px;
     height: 40px;
     background-color:#3e393b;
@@ -30,7 +78,8 @@ QPushButton#label-slice-center{
     font-weight: 400;
     border-style: solid;
     border-color: #8a8a8a;
-    border-width: 0px 1px 0px 1px;
+    border-width: 0px 1px 2px 1px;
+    border-bottom: 2px black solid;
 }
 
 QPushButton:hover#label-slice,:hover#label-slice-center{
@@ -49,7 +98,7 @@ QPushButton#login{
     background-color: #4a4a4a;
     font-size:20px;
     font-family: "Optima", serif;
-    font-weight: 300;
+    font-weight: 400;
     border: 0 black none;
     border-radius: 6px;
 }
@@ -61,7 +110,7 @@ QPushButton:hover#login{
     background-color: #5c5c5c;
     font-size:20px;
     font-family: "Optima", serif;
-    font-weight: 300;
+    font-weight: 400;
     border: 0 black none;
     border-radius: 6px;
 }
@@ -71,7 +120,7 @@ QLineEdit {
     background-color: #616161;
     font-size:18px;
     font-family: "Optima", serif;
-    font-weight: 50;
+    font-weight: 100;
     width: 100px;
     height: 1.5em;
 }

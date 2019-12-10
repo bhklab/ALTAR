@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QWidget, QPushButton, QHBoxLayout, QDialog, QVBoxLayout, QGridLayout, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot, Qt
 from pyqtgraph import PlotWidget, plot
@@ -62,6 +62,19 @@ class MainWindow(QWidget):
         hbox.addStretch()
         # --- ###### --- #
 
+        # --- Plot specific patient --- #
+        self.plt_patient_box = QHBoxLayout()
+        patient_input = QLineEdit()
+        patient_input.setPlaceholderText("Type Specific Patient ID")
+        patient_button = QPushButton("Plot Patient")
+        patient_button.setObjectName("input")
+        patient_button.clicked.connect(lambda:
+                     self.plt_specific_patient(patient_input.text()))
+        self.plt_patient_box.addWidget(patient_button)
+        self.plt_patient_box.addWidget(patient_input)
+        # self.plt_patient_box.setSpacing(4)
+        # --- ################### --- #
+
         # ---  TEXT   --- #
         self.text_header = QLabel("")
         self.text_header.setAlignment(Qt.AlignCenter)
@@ -75,6 +88,7 @@ class MainWindow(QWidget):
         # --- ----- --- #
 
         vbox.addLayout(hbox)
+        vbox.addLayout(self.plt_patient_box)
         self.setLayout(vbox)
 
         # Initialize the data
@@ -88,7 +102,17 @@ class MainWindow(QWidget):
         # Load the first patient in the GUI
         self.update_display()
 
+    def plt_specific_patient(self, patient_id) :
+        df = self.app_functions.label_df.copy()
 
+        try :
+            self.current_patient = df[df["patient_id"] == patient_id].index[0]
+            # Valid patient. Update display
+            self.update_display
+        except ValueError :
+            # Invalid patient. Do nothing.
+            return
+        self.update_display()
 
     def on_click(self, result=None) :
         slice_index = self.imageWidget.currentIndex

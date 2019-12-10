@@ -198,100 +198,29 @@ class LabelImageApp(object):
         return img
 
     def process_result(self, result, index=None, slice=None) :
-        if index < self.stop_index+1 :
-            if result == "s" :
-                self.label_df.at[index, "has_artifact"] = '2'
-            elif result == "w" :
-                self.label_df.at[index, "has_artifact"] = '1'
-            elif result == "n" :
-                self.label_df.at[index, "has_artifact"] = '0'
+        # if index < self.stop_index+1 :
+        if result == "s" :
+            self.label_df.at[index, "has_artifact"] = '2'
+        elif result == "w" :
+            self.label_df.at[index, "has_artifact"] = '1'
+        elif result == "n" :
+            self.label_df.at[index, "has_artifact"] = '0'
 
-            self.label_df.at[index, "a_slice"] = str(slice)
+        self.label_df.at[index, "a_slice"] = str(slice)
 
-            # Save this label to a csv
-            print("Saving answer")
-            self.save_answer(index)
+        # Save this label to a csv
+        print("Saving answer")
+        self.save_answer(index)
 
-        else :
-            # If we're outside the loop, we've reached the last patient
-            print("Last patient label complete. THANK YOU!")
-            self.exit_app()
+        # else :
+        #     # If we're outside the loop, we've reached the last patient
+        #     print("Last patient label complete. THANK YOU!")
+        #     self.exit_app()
+
+
 
 
 '''
-    # --- Main interface loop --- #
-    def main_loop(self) :
-
-        while self.index < self.stop_index+1 :
-            """ MAIN APP LOOP """
-            """Each iteration in this loop plots and labels one patient's scan"""
-            patient_id = self.label_df["patient_id"].loc[self.index]
-            file_name = str(patient_id) + "_img.npy"
-
-            # Load the new image and send to the graphing GUI
-            image_file = os.path.join(self.img_path, file_name)
-            image = np.load(image_file, mmap_mode="r")
-            image = image[:, 50:-175, 75:-75]
-
-            # Convert the image to 16-bit integer
-            image = image.astype(np.int16)
-            # Normalize the image
-            image = self.normalize(image)
-
-            self.gui.setImage(image)
-            self.gui.setCurrentIndex(60)
-
-            # Ask the user if they see an artifact
-            message = "Does patient {} have an artifact? s/w/n: ".format(patient_id)
-            answer = input(message)
-
-            # Process the answer and update the df (1=has artifact, 0=no artifact)
-            if answer == 's' or answer == 'S' or answer == 'strong' :
-                print("You answered STRONG artifact")
-                self.label_df.at[self.index, "has_artifact"] = '2'
-                output = input("Press [ENTER] when looking at largest artifact slice.")
-                if output == '' :
-                    artifact_slice = self.gui.currentIndex
-                    self.label_df.at[self.index, "a_slice"] = str(artifact_slice)
-                    print("Strongest slice: {}".format(artifact_slice))
-
-            elif answer == 'w' or answer == 'W' or answer == 'weak' :
-                print("You answered WEAK artifact")
-                self.label_df.at[self.index, "has_artifact"] = '1'
-                output = input("Press [ENTER] when looking at largest artifact slice.")
-                if output == '' :
-                    artifact_slice = self.gui.currentIndex
-                    self.label_df.at[self.index, "a_slice"] = str(artifact_slice)
-                    print("Strongest slice: {}".format(artifact_slice))
-
-
-
-            elif answer == 'n' or answer == 'N' or answer == 'no':
-                print("You answered NO artifact")
-                self.label_df.at[self.index, "has_artifact"] = '0'
-                output = input("Press [ENTER] when looking at a central slice in the mouth.")
-                if output == '' :
-                    artifact_slice = self.gui.currentIndex
-                    self.label_df.at[self.index, "a_slice"] = str(artifact_slice)
-                    print("Strongest slice: {}".format(artifact_slice))
-
-            else :
-                print("Not a valid answer. \nPlease enter 's' for STRONG, 'w' for WEAK, 'n' for NONE.")
-                continue # Return to the top of the loop and ask user again
-
-
-            # Save the appropriate line to the CSV
-            self.save_answer(self.index)
-
-            # Move to the next patient
-            self.index = self.index + 1
-            """ END OF ITERATION """
-
-        # If we're outside the loop, we've reached the last patient
-        print("Last patient label complete. THANK YOU!")
-        self.exit_app()
-
-
 if __name__ == '__main__':
 
     print("Initializing application")
