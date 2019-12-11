@@ -33,7 +33,7 @@ class LabelImageApp(object):
 
         ## EDIT THESE FOR YOUR IMAGE QUOTA ##
         self.start_index = 0        # Index to start at. Program will ignore everything before this
-        self.stop_index  = 458      # Index to stop at. Program will ignore everything after this.
+        self.stop_index  = 1000      # Index to stop at. Program will ignore everything after this.
         ## ------------------------------- ##
 
         ##  Edit these paths according to your directory sctructure ##

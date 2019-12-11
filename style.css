@@ -133,3 +133,12 @@ QLabel#loading {
     border: 0 black none;
     image: url(loader.gif)
 }
+
+QProgressBar {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+    text-align: center;
+}

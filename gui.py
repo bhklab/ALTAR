@@ -1,6 +1,8 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QLineEdit, QWidget,
+                             QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
+                             QProgressBar)
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QThread
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
@@ -16,6 +18,34 @@ from label import LabelImageApp
 import time
 
 
+class AuthenticateThread(QThread) :
+    notifyProgress = pyqtSignal(list)
+
+    def run(self) :
+        pass
+
+class DownloadThread(QThread):
+    """A Thread dedicated to a progress bar widget to show
+       image download progress."""
+    def __init__(self, sftp, path_to_remote_img):
+        self.path_to_remote_img = path_to_remote_img
+        self.sftp = sftp
+        super().__init__()
+    # Send a pyqtSignal with :
+    # list = [number of bits transferred, number of bits to transfer]
+    notifyProgress = pyqtSignal(list)
+
+    def run(self) :
+        # Download the Image
+        self.sftp.get(self.path_to_remote_img, "tmp.npy", callback=self.status_bar)
+
+    def status_bar(self, packets_sent, packets_to_send) :
+        l = [packets_sent, packets_to_send]
+
+        # Notify the progress bar widget of download progress
+        self.notifyProgress.emit(l)
+
+
 class MainWindow(QWidget):
 
     def __init__(self, *args, **kwargs):
@@ -23,7 +53,7 @@ class MainWindow(QWidget):
 
         # Define the distance from top left of screen
         # (first two ints), x,y size of windows (last two ints)
-        self.setGeometry(300, 400, 700, 500)
+        self.setGeometry(300, 400, 1000, 700)
         self.setStyleSheet(open('style.css').read())
 
         # Open remote connection to H4H
@@ -33,6 +63,9 @@ class MainWindow(QWidget):
 
 
     def initUI(self) :
+        """ The main Application UI """
+        self.mode = "label"
+
         # --- WINDOW --- #
         self.setWindowTitle("Image Labelling")
 
@@ -87,8 +120,15 @@ class MainWindow(QWidget):
         vbox.addWidget(self.imageWidget)
         # --- ----- --- #
 
+        # Progress Bar #
+        self.progressBar = QProgressBar(self)
+        self.progressBar.setTextVisible(True)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(100)
+
         vbox.addLayout(hbox)
         vbox.addLayout(self.plt_patient_box)
+        vbox.addWidget(self.progressBar)
         self.setLayout(vbox)
 
         # Initialize the data
@@ -102,6 +142,8 @@ class MainWindow(QWidget):
         # Load the first patient in the GUI
         self.update_display()
 
+
+
     def plt_specific_patient(self, patient_id) :
         df = self.app_functions.label_df.copy()
 
@@ -113,6 +155,8 @@ class MainWindow(QWidget):
             # Invalid patient. Do nothing.
             return
         self.update_display()
+
+
 
     def on_click(self, result=None) :
         slice_index = self.imageWidget.currentIndex
@@ -130,6 +174,7 @@ class MainWindow(QWidget):
 
 
     def init_authentiation(self) :
+        """ The authentication window UI """
         # We are currently in "authentication mode"
         self.mode = "auth"
 
@@ -154,14 +199,21 @@ class MainWindow(QWidget):
         progress.addWidget(self.icon)
         progress.addStretch()
 
+        # Progress bar
+        # self.progressBar = QProgressBar(self)
+        # self.progressBar.setText("Loading Images")
+
         # Prompt user for their h4h cridentials
         vbox.addStretch()
         vbox.addLayout(progress)
         vbox.addWidget(user)
         vbox.addWidget(pw)
         vbox.addWidget(submit_button)
+        # vbox.addWidget(self.progressBar)
         vbox.addStretch()
         self.setLayout(vbox)
+
+
 
     def authenticate(self, username, password, auth_widget) :
 
@@ -192,18 +244,23 @@ class MainWindow(QWidget):
                        username=username, password=password)
         sftp_client = client.open_sftp()
 
-        # self.t = paramiko.Transport(host, port)
-        # self.t.window_size=2147483647
-        # self.t.packetizer.REKEY_BYTES = pow(2, 40)
-        # self.t.packetizer.REKEY_PACKETS = pow(2, 40)
-        # self.t.connect(username=username, password=password)
-        # sftp_client = paramiko.SFTPClient.from_transport(self.t)
-
         return sftp_client
 
-    def load_img(self, path) :
+    def get_img(self, path) :
         # Load the new image and send to the graphing GUI
-        self.sftp.get(path, "tmp.npy")
+        # self.sftp.get(path, "tmp.npy", callback=)
+        self.load = DownloadThread(self.sftp, path)
+        self.load.notifyProgress.connect(self.onProgress)
+        self.load.start()
+
+        # When finished downloading image, diplay it
+        self.load.finished.connect(self.display_img)
+
+    def display_img(self) :
+        # Remove progress bar
+        self.progressBar.setValue(0)
+        self.progressBar.setFormat("")
+
 
         image = np.load("tmp.npy")
 
@@ -218,6 +275,16 @@ class MainWindow(QWidget):
 
         self.imageWidget.setImage(image)
 
+        # Update text header
+        self.text_header.setText(f"Current patient: {self.current_patient}")
+
+
+    def onProgress(self, l) :
+        percent_done = (l[0] / (l[0] + l[1])) * 100
+
+        self.progressBar.setFormat("Loading Images")
+
+        self.progressBar.setValue(2*percent_done)
 
 
     def keyPressEvent(self, e):
@@ -236,11 +303,10 @@ class MainWindow(QWidget):
 
         # Update Image widget
         print("Loading Image")
-        self.load_img(img_path)
+        self.get_img(img_path)
         print("Image transferred")
 
-        # Update text header
-        self.text_header.setText(f"Current patient: {self.current_patient}")
+
 
 def main():
     app = QApplication(sys.argv)
