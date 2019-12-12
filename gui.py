@@ -160,6 +160,14 @@ class MainWindow(QWidget):
         self.load.notifyProgress.connect(self.onProgress)
         self.load.start()
 
+        self.load.finished.connect(self.clear_progressBar)
+
+
+    def clear_progressBar(self) :
+        self.progressBar.setValue(0)
+        self.progressBar.setFormat("")
+
+
     def plt_specific_patient(self, patient_id) :
         df = self.app_functions.label_df.copy()
 
@@ -173,6 +181,8 @@ class MainWindow(QWidget):
         except ValueError :
             # Invalid patient. Do nothing.
             return
+
+
 
     def on_click(self, result=None) :
         slice_index = self.imageWidget.currentIndex
