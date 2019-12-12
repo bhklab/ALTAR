@@ -142,3 +142,17 @@ QProgressBar {
     border: 0 black none;
     text-align: center;
 }
+
+QProgressBar {
+    color: white;
+    height: 1.5em;
+    font-size: 18px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #4a4a4a;
+}
