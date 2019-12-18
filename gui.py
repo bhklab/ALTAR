@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QLineEdit, QWidget,
                              QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
                              QProgressBar)
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QThread
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QThread, QEvent
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
@@ -49,6 +49,10 @@ class DownloadThread(QThread):
         self.notifyProgress.emit(l)
 
 class MainWindow(QWidget):
+
+    # Enable pressing enter key to do stuff
+    keyPressed = pyqtSignal(int)
+
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
@@ -56,6 +60,9 @@ class MainWindow(QWidget):
         # (first two ints), x,y size of windows (last two ints)
         self.setGeometry(300, 400, 1000, 700)
         self.setStyleSheet(open('style.css').read())
+
+        # Enable pressing enter key to do stuff
+        self.keyPressed.connect(self.on_key_press)
 
         # Open remote connection to H4H
         # If this is successful, initUI will be called
@@ -145,15 +152,21 @@ class MainWindow(QWidget):
         # Load the first patient in the GUI
         self.loadImage(patientIndex = self.current_patient)
         self.update_display()
+
+
     def getPath(self, patientIndex = None, patientId = None):
         if(patientIndex != None):
             patientId = self.app_functions.label_df.loc[patientIndex, "patient_id"]
         file_name = str(patientId) + "_img.npy"
         return os.path.join(self.app_functions.img_path, file_name)
+
+
     def getNextImage(self):
         image = self.buffer[0]
         self.buffer = self.buffer[1:]
         return image
+
+
     def loadImage(self, patientIndex = None, patientId = None):
         path = self.getPath(patientId = patientId, patientIndex = patientIndex)
         self.load = DownloadThread(self.sftp, path, self.buffer)
@@ -174,6 +187,7 @@ class MainWindow(QWidget):
         try :
             self.patient_id = patient_id
             self.current_patient = df[df["patient_id"] == patient_id].index[0]
+
             # Valid patient. Update display
             self.buffer = []
             self.loadImage(patientId = self.patient_id)
@@ -181,7 +195,6 @@ class MainWindow(QWidget):
         except ValueError :
             # Invalid patient. Do nothing.
             return
-
 
 
     def on_click(self, result=None) :
@@ -192,9 +205,67 @@ class MainWindow(QWidget):
                                           slice=slice_index)
 
 
+        # Move to next patient
+        self.current_patient = self.current_patient + 1
+        self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
+
         # Plot the new patient in the GUI
         self.update_display()
 
+
+    def update_display(self) :
+        # Update Image widget
+        print("Loading Image")
+        self.display_img()
+        print("Image transferred")
+        # self.current_patient = self.current_patient + 1
+        # self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
+        if (len(self.buffer) == 0):
+            self.loadImage(patientIndex = self.current_patient+1)
+
+    def display_img(self) :
+        # Remove progress bar
+        self.progressBar.setValue(0)
+        self.progressBar.setFormat("")
+
+        if(len(self.buffer) == 0):
+           self.load.wait()
+        image = self.getNextImage()
+
+        image = image[:, 50:-175, 75:-75]
+
+        # Convert the image to 16-bit integer
+        image = image.astype(np.int16)
+        # Normalize the image
+        image = self.app_functions.normalize(image)
+
+        self.imageWidget.setImage(image)
+
+        # Update text header
+        self.text_header.setText(f"Current patient: {self.current_patient}/{self.patient_id}")
+
+    def onProgress(self, l) :
+        percent_done = (l[0] / (l[0] + l[1])) * 100
+
+        self.progressBar.setFormat("Loading Next Image (%d %%)" % (2 * percent_done))
+
+        self.progressBar.setValue(2*percent_done)
+
+    def keyPressEvent(self, event):
+        """ Handle key press events"""
+        super(MainWindow, self).keyPressEvent(event)
+        if event.type() == QEvent.KeyPress :
+            self.keyPressed.emit(event.key())
+
+
+    def on_key_press(self, key) :
+        print(key, Qt.Key_Return)
+        if key == Qt.Key_Return:
+            print("You hit enter")
+            if self.mode == "auth" :
+                print('Authencating')
+
+    ## -- AUTHENTICATION -- ##
     def init_authentiation(self) :
         """ The authentication window UI """
         # We are currently in "authentication mode"
@@ -265,52 +336,8 @@ class MainWindow(QWidget):
 
         return sftp_client
 
-    def display_img(self) :
-        # Remove progress bar
-        self.progressBar.setValue(0)
-        self.progressBar.setFormat("")
+    ## -- ################ -- ##
 
-        if(len(self.buffer) == 0):
-           self.load.wait()
-        image = self.getNextImage()
-
-        image = image[:, 50:-175, 75:-75]
-
-        # Convert the image to 16-bit integer
-        image = image.astype(np.int16)
-        # Normalize the image
-        image = self.app_functions.normalize(image)
-
-        self.imageWidget.setImage(image)
-
-        # Update text header
-        self.text_header.setText(f"Current patient: {self.current_patient}/{self.patient_id}")
-
-    def onProgress(self, l) :
-        percent_done = (l[0] / (l[0] + l[1])) * 100
-
-        self.progressBar.setFormat("Loading Next Image (%d %%)" % (2 * percent_done))
-
-        self.progressBar.setValue(2*percent_done)
-
-    def keyPressEvent(self, e):
-        """ Handle key press events"""
-        if e.key == 16777220 :
-            # [Enter] key was hit
-            if self.mode == "auth" :
-                print("Authenticating")
-            if self.mode == "label" :
-                print("")
-
-    def update_display(self) :
-        # Update Image widget
-        print("Loading Image")
-        self.display_img()
-        print("Image transferred")
-        self.current_patient = self.current_patient + 1
-        self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
-        if (len(self.buffer) == 0):
-            self.loadImage(patientIndex = self.current_patient)
 
 
 

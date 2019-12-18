@@ -208,6 +208,7 @@ class LabelImageApp(object):
             self.label_df.at[index, "has_artifact"] = '0'
 
         self.label_df.at[index, "a_slice"] = str(slice)
+        
 
         # Save this label to a csv
         print("Saving answer")
