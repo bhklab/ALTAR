@@ -8,6 +8,7 @@ import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
 import os
 import io
+import re
 
 import numpy as np
 import paramiko
@@ -39,7 +40,7 @@ class DownloadThread(QThread):
     def run(self) :
         # Download the Image
         self.sftp.get(self.path_to_remote_img, "tmp.npy", callback=self.status_bar)
-        self.buffer.append(np.load("tmp.npy"))
+        self.buffer.append((np.load("tmp.npy"), re.search( "([0-9]+)_img.npy",self.path_to_remote_img).group(1)))
         os.remove("tmp.npy")
 
     def status_bar(self, packets_sent, packets_to_send) :
@@ -162,7 +163,12 @@ class MainWindow(QWidget):
 
 
     def getNextImage(self):
-        image = self.buffer[0]
+        if(len(self.buffer) == 0 or self.patient_id != self.buffer[0][1]):
+            self.buffer = []
+            self.loadImage(patientId = self.patient_id)
+        if(len(self.buffer) == 0):
+           self.load.wait()
+        image = self.buffer[0][0]
         self.buffer = self.buffer[1:]
         return image
 
@@ -326,6 +332,7 @@ class MainWindow(QWidget):
 
     def setup_remote(self, username, password) :
         host = "172.27.23.173"
+        #host = "h4huhndata1"
         port = 22
 
         client = paramiko.SSHClient()
