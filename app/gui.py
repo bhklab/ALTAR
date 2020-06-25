@@ -14,7 +14,7 @@ import numpy as np
 import paramiko
 from getpass import getpass
 
-from label import LabelImageApp
+from app.label import LabelImageApp
 
 import time
 
@@ -60,7 +60,7 @@ class MainWindow(QWidget):
         # Define the distance from top left of screen
         # (first two ints), x,y size of windows (last two ints)
         self.setGeometry(300, 400, 1000, 700)
-        self.setStyleSheet(open('style.css').read())
+        self.setStyleSheet(open('app/style.css').read())
 
         # Enable pressing enter key to do stuff
         self.keyPressed.connect(self.on_key_press)
