@@ -1,29 +1,15 @@
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QLineEdit, QWidget,
-                             QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
-                             QProgressBar, QMenu)
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QThread, QEvent
-from pyqtgraph import PlotWidget, plot
+from PyQt5.QtWidgets import (QLineEdit, QWidget, QPushButton, QHBoxLayout,
+                             QVBoxLayout, QLabel, QProgressBar)
+from PyQt5.QtCore import pyqtSignal, QThread
 import pyqtgraph as pg
-import sys  # We need sys so that we can pass argv to QApplication
 import os
-import io
 import re
 
 import numpy as np
 import paramiko
-from getpass import getpass
 
 from app.label import LabelImageApp
 
-import time
-
-
-class AuthenticateThread(QThread) :
-    notifyProgress = pyqtSignal(list)
-
-    def run(self) :
-        pass
 
 
 
@@ -54,26 +40,20 @@ class DownloadThread(QThread):
 
 
 
-class MainWindow(QWidget):
-
-    # Enable pressing enter key to do stuff
-    keyPressed = pyqtSignal(int)
-
-    def __init__(self, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
+class LabelUI(QWidget):
+    def __init__(self, parent=None):
+        super(LabelUI, self).__init__(parent)
+        self.parent = parent
+        self.sftp = parent.sftp
 
         # Define the distance from top left of screen
         # (first two ints), x,y size of windows (last two ints)
-        self.setGeometry(300, 400, 1000, 700)
+        # self.setGeometry(300, 400, 1000, 700)
         self.setStyleSheet(open('app/style.css').read())
-
 
         # Enable pressing enter key to do stuff
         self.keyPressed.connect(self.on_key_press)
 
-        # Open remote connection to H4H
-        # If this is successful, initUI will be called
-        self.init_authentiation()
 
     def initUI(self) :
         """ The main Application UI """
@@ -85,7 +65,6 @@ class MainWindow(QWidget):
         hbox = QHBoxLayout()
         vbox = QVBoxLayout()
         # --- ###### --- #
-
 
         # --- BUTTONS --- #
         s_button = QPushButton("Strong")
@@ -128,7 +107,6 @@ class MainWindow(QWidget):
         vbox.addWidget(self.text_header)
         # --- ####### --- #
 
-
         # --- IMAGE --- #
         self.imageWidget = pg.ImageView()
         vbox.addWidget(self.imageWidget)
@@ -144,6 +122,7 @@ class MainWindow(QWidget):
         vbox.addLayout(self.plt_patient_box)
         vbox.addWidget(self.progressBar)
         self.setLayout(vbox)
+
 
     def initLoading(self):
         self.buffer = []
@@ -196,7 +175,6 @@ class MainWindow(QWidget):
 
     def plt_specific_patient(self, patient_id) :
         df = self.app_functions.label_df.copy()
-
         try :
             self.patient_id = patient_id
             self.current_patient = df[df["patient_id"] == patient_id].index[0]
@@ -216,8 +194,6 @@ class MainWindow(QWidget):
         self.app_functions.process_result(result,
                                           index=self.current_patient,
                                           slice=slice_index)
-
-
         # Move to next patient
         self.current_patient = self.current_patient + 1
         self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
@@ -236,6 +212,7 @@ class MainWindow(QWidget):
         if (len(self.buffer) == 0):
             self.loadImage(patientIndex = self.current_patient+1)
 
+
     def display_img(self) :
         # Remove progress bar
         self.progressBar.setValue(0)
@@ -244,7 +221,6 @@ class MainWindow(QWidget):
         if(len(self.buffer) == 0):
            self.load.wait()
         image = self.getNextImage()
-
         image = image[:, 50:-175, 75:-75]
 
         # Convert the image to 16-bit integer
@@ -257,125 +233,8 @@ class MainWindow(QWidget):
         # Update text header
         self.text_header.setText(f"Current patient: {self.current_patient}/{self.patient_id}")
 
+
     def onProgress(self, l) :
         percent_done = (l[0] / (l[0] + l[1])) * 100
-
         self.progressBar.setFormat("Loading Next Image (%d %%)" % (2 * percent_done))
-
         self.progressBar.setValue(2*percent_done)
-
-    def keyPressEvent(self, event):
-        """ Handle key press events"""
-        super(MainWindow, self).keyPressEvent(event)
-        if event.type() == QEvent.KeyPress :
-            self.keyPressed.emit(event.key())
-
-
-    def on_key_press(self, key) :
-        print(key, Qt.Key_Return)
-        if key == Qt.Key_Return:
-            print("You hit enter")
-            if self.mode == "auth" :
-                print('Authencating')
-
-    ## -- AUTHENTICATION -- ##
-    def init_authentiation(self) :
-        """ The authentication window UI """
-        # We are currently in "authentication mode"
-        self.mode = "auth"
-
-        # Set GUI title
-        self.setWindowTitle("H4H Login")
-
-        # Create a widget with username and password fields
-        vbox = QVBoxLayout()
-        user = QLineEdit()
-        pw = QLineEdit()
-        submit_button = QPushButton("Login")
-        submit_button.setObjectName("login")
-        submit_button.clicked.connect(lambda: self.authenticate(user.text(), pw.text(), vbox))
-        pw.setEchoMode(QLineEdit.Password)
-        user.setPlaceholderText("Username")
-        pw.setPlaceholderText("Password")
-
-        progress = QHBoxLayout()
-        self.message = QLabel("Enter your H4H username and password")
-        self.icon = QLabel("")
-        progress.addWidget(self.message)
-        progress.addWidget(self.icon)
-        progress.addStretch()
-
-        # Progress bar
-        # self.progressBar = QProgressBar(self)
-        # self.progressBar.setText("Loading Images")
-
-        # Prompt user for their h4h cridentials
-        vbox.addStretch()
-        vbox.addLayout(progress)
-        vbox.addWidget(user)
-        vbox.addWidget(pw)
-        vbox.addWidget(submit_button)
-        # vbox.addWidget(self.progressBar)
-        vbox.addStretch()
-        self.setLayout(vbox)
-
-    def authenticate(self, username, password, auth_widget) :
-
-        try :
-            self.sftp = self.setup_remote(username, password)
-            print("Authentication Successful")
-            # Remove the authentication widget
-            QWidget().setLayout(auth_widget.layout())
-            self.initUI()
-            self.initLoading()
-
-        except :
-            # Remove the authentication widget
-            QWidget().setLayout(auth_widget.layout())
-            print("Authentication Unsuccessful")
-
-            # Ask for authentication again
-            self.init_authentiation()
-
-    def setup_remote(self, username, password) :
-        # TODO move these host settings to a settings doc
-        host = "172.27.23.173"
-        port = 22
-
-        client = paramiko.SSHClient()
-        client.load_system_host_keys()
-        client.connect(host, port=port,
-                       username=username, password=password)
-        sftp_client = client.open_sftp()
-
-        return sftp_client
-
-    ## -- ################ -- ##
-
-    def closeEvent(self, event) :
-        """ This function is called when the app closes.
-        Close sftp connections and exit cleanly"""
-        try :
-            # Save results
-            self.app_functions.exit_app()
-            # Close sftp
-            self.sftp.close()
-        except : # Application is still on login window
-            pass
-
-
-
-
-
-
-def main():
-    app = QApplication(sys.argv)
-    main = MainWindow()
-    main.show()
-
-
-    sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
