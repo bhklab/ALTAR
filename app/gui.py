@@ -345,6 +345,19 @@ class MainWindow(QWidget):
 
     ## -- ################ -- ##
 
+    def closeEvent(self, event) :
+        """ This function is called when the app closes.
+        Close sftp connections and exit cleanly"""
+        try :
+            # Save results
+            self.app_functions.exit_app()
+            # Close sftp
+            self.sftp.close()
+        except : # Application is still on login window
+            pass
+
+
+
 
 
 
