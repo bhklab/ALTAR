@@ -14,10 +14,9 @@ except :
 
     # Close remote connections
     main.sftp.close()
-    # main.t.close()
 
-# Close GUI
-app.quit()
+    # Close GUI
+    app.quit()
 
-# Close python interpreter
-sys.exit()
+    # Close python interpreter
+    sys.exit()
