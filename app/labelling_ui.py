@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QLineEdit, QWidget, QPushButton, QHBoxLayout,
                              QVBoxLayout, QLabel, QProgressBar)
-from PyQt5.QtCore import pyqtSignal, QThread
+from PyQt5.QtCore import pyqtSignal, QThread, Qt
 import pyqtgraph as pg
 import os
 import re
@@ -41,7 +41,7 @@ class DownloadThread(QThread):
 
 
 class LabelUI(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, settings_dict=None):
         super(LabelUI, self).__init__(parent)
         self.parent = parent
         self.sftp = parent.sftp
@@ -50,9 +50,6 @@ class LabelUI(QWidget):
         # (first two ints), x,y size of windows (last two ints)
         # self.setGeometry(300, 400, 1000, 700)
         self.setStyleSheet(open('app/style.css').read())
-
-        # Enable pressing enter key to do stuff
-        self.keyPressed.connect(self.on_key_press)
 
 
     def initUI(self) :
@@ -131,7 +128,8 @@ class LabelUI(QWidget):
         print("Initializing data")
         self.app_functions = LabelImageApp(saving=True,
                                            img_widget=self.imageWidget,
-                                           sftp_client=self.sftp)
+                                           sftp_client=self.sftp,
+                                           settings_dict=self.parent.settings_dict)
         self.current_patient = self.app_functions.index
         self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
         self.text_header.setText(f"Current Patient: {self.current_patient}/{self.patient_id}")
@@ -194,12 +192,15 @@ class LabelUI(QWidget):
         self.app_functions.process_result(result,
                                           index=self.current_patient,
                                           slice=slice_index)
-        # Move to next patient
-        self.current_patient = self.current_patient + 1
-        self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
+        # Move to next patient only if we are not at end of images
+        if self.current_patient + 1 != len(self.app_functions.label_df) :
+            self.current_patient = self.current_patient + 1
+            self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
 
-        # Plot the new patient in the GUI
-        self.update_display()
+            # Plot the new patient in the GUI
+            self.update_display()
+        else :
+            pass
 
 
     def update_display(self) :
@@ -210,7 +211,12 @@ class LabelUI(QWidget):
         # self.current_patient = self.current_patient + 1
         # self.patient_id = self.app_functions.label_df.loc[self.current_patient, "patient_id"]
         if (len(self.buffer) == 0):
-            self.loadImage(patientIndex = self.current_patient+1)
+            # If the buffer is empty, fill it with anther image
+            if self.current_patient + 1 != len(self.app_functions.label_df) :
+                # Check if we are on last image in dataset. If so, don't update buffer
+                self.loadImage(patientIndex=self.current_patient + 1)
+            else :
+                pass
 
 
     def display_img(self) :
@@ -231,7 +237,7 @@ class LabelUI(QWidget):
         self.imageWidget.setImage(image)
 
         # Update text header
-        self.text_header.setText(f"Current patient: {self.current_patient}/{self.patient_id}")
+        self.text_header.setText(f"Current patient: Index {self.current_patient}; ID {self.patient_id}")
 
 
     def onProgress(self, l) :

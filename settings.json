@@ -1,9 +1,9 @@
 {
-    "Host Name": "172.27.23.173",
+    "Host": "172.27.23.173",
     "Port": "22",
     "Remote CSV Path": "/cluster/home/carrowsm/data/radcure_DA_labels.csv",
     "Remote Image Path": "/cluster/projects/radiomics/Temp/RADCURE-npy/img",
     "Local Temporary Path": "tmp.csv",
-    "Start Index": "0",
-    "Stop Index": "3012"
+    "Start Index": "1",
+    "Stop Index": "3011"
 }

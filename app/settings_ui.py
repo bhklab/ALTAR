@@ -17,9 +17,7 @@ class SettingsUI(QWidget) :
 
 
     def init_ui(self):
-        # Open settings JSON
-        with open(self.settings_file) as json_file:
-            settings = json.load(json_file)
+        settings = self.parent.settings_dict
 
         # Populate settings form with settings
         self.fbox = QFormLayout()
@@ -37,7 +35,7 @@ class SettingsUI(QWidget) :
 
     def _on_save_click(self) :
         settings_dict = {}
-        # Read all text fields and save in settings json
+        # Read all text fields and save in settings.json
         for i in range(self.fbox.count()) :
             w = self.fbox.itemAt(i).widget()
             if type(w) is QLabel  :      # This is a settings key
@@ -46,6 +44,8 @@ class SettingsUI(QWidget) :
                 settings_dict[k] = w.text()
             else :                       # This is a button
                 continue
+        # Update the settings dict shared by all widgets
+        self.parent.settings_dict = settings_dict
         # Save the settings in a JSON file
         with open(self.settings_file, 'w') as outfile:
             json.dump(settings_dict, outfile, indent=4)

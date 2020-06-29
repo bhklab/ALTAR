@@ -11,10 +11,6 @@ from getpass import getpass
 
 
 
-
-
-
-
 class AuthenticateThread(QThread) :
     notifyProgress = pyqtSignal(list)
 
@@ -87,14 +83,14 @@ class AuthenticationUI(QWidget) :
 
 
     def setup_remote(self, username, password) :
-        # TODO move these host settings to a settings doc
-        host = "172.27.23.173"
-        port = 22
-        client = paramiko.SSHClient()
+        # Get the remote host and port from settings
+        host = str(self.parent.settings_dict["Host"])
+        port = int(self.parent.settings_dict["Port"])
+        client = paramiko.SSHClient()     # Create SFTP client
         client.load_system_host_keys()
-        client.connect(host, port=port,
+        client.connect(host, port=port,   # Authenticate
                        username=username, password=password)
-        sftp_client = client.open_sftp()
+        sftp_client = client.open_sftp()  # Open connection to remote
 
         return sftp_client
 
@@ -111,7 +107,4 @@ class AuthenticationUI(QWidget) :
             pass_widget.clear()
             self.message.setText("Enter your H4H username and password\n" +
                                  "Authentication unsuccessful.")
-
-
-
     ## -- ################ -- ##

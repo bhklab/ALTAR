@@ -1,5 +1,5 @@
 import sys
-# from app.gui import MainWindow as mw
+import json
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QStackedWidget,
                              QProgressBar, QMenu, QAction, QToolBar, QStatusBar)
 from PyQt5.QtGui import QIcon
@@ -12,10 +12,51 @@ from app.settings_ui import SettingsUI
 
 
 class MainWindow(QMainWindow):
-    """docstring for MainWindow."""
+    """The overarching class encompassing all the widgets in the app. The
+    central widget in the QMainWindow is a QStackedWidget which we used to
+    switch between auth_widget, label_widget, and settings_widget.
+
+    Attributes :
+    ------------
+    settings_dict  (dictionary) :
+        A dictionary containing all keys and values in settings.json. Includes a
+        toolbar with 'settings' icon. Clicking this switches the current widget
+        to the settings_widget.
+    central_widget  (QStackedWidget) :
+        A QStacked widget containing all the main QWidgets used in the app.
+    auth_widget (QWidget) :
+        The server login page. This includes a usename and password field.
+    label_widget (QWidget) :
+        The main widget used for labelling images.
+    settings_widget (QWidget) :
+        A form-style widget for editing the app settings. These are read from
+        and written to settings.json.
+    sftp :
+        The paramiko SFTP connection used to communicate with the remote host.
+
+    Methods :
+    ---------
+    _on_successful_login :
+        Called by the auth_widget to close the authentication page and open the
+        label_widget.
+    _on_settings_click :
+        Called by clicking the settings icon in the toolbar. Opens the
+        settings_widget and populates the form fields.
+    _on_close_settings :
+        Called when closing the settings_widget, by either the 'Save' or "Cancel"
+        buttons. Closes the settings window and restores the app to the
+        previously-used widget (either login or label).
+    closeEvent :
+        Called by closing the application. Saves the current progress to the
+        remote CSV and closes the paramiko SFTP connection.
+    """
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__()
+
+        # Read settings
+        with open("settings.json") as json_file:
+            self.settings_dict = json.load(json_file)
 
         # Define the distance from top left of screen
         # (first two ints), x,y size of windows (last two ints)
@@ -35,6 +76,7 @@ class MainWindow(QMainWindow):
 
         # Initialize the authentication window
         self.auth_widget = AuthenticationUI(parent=self)
+        self.label_widget = None # Do this for now, will overwrite later
 
         # Set the current widget to the authentication window
         # When the user sucessfully authenticates, auth_widget will call
@@ -87,27 +129,34 @@ class MainWindow(QMainWindow):
         settings was opened.
         """
         self.central_widget.setCurrentWidget(self.previous_widget)
+        if self.previous_widget == self.label_widget :
+            self.setWindowTitle("Label Application")
+        else :
+            self.setWindowTitle("Login")
 
 
     def closeEvent(self, event) :
         """ This function is called when the app closes.
         Close sftp connections and exit cleanly
         """
-        try :
+        if self.label_widget is None :
+            # Application is still on login window; do nothing
+            pass
+        else :
             # Save results
-            self.app_functions.exit_app()
+            self.label_widget.app_functions.exit_app()
             # Close sftp
             self.sftp.close()
-        except : # Application is still on login window
-            pass
 
 
-# Initialize an app window and the app itself
-app = QApplication(sys.argv)
-main = MainWindow()
-# main = mw()
-main.show()
 
 
-# Start the event loop
-sys.exit(app.exec_())
+if __name__ == '__main__':
+
+    # Initialize an app window and the app itself
+    app = QApplication(sys.argv)
+    main = MainWindow()
+    main.show()
+
+    # Start the event loop
+    sys.exit(app.exec_())
