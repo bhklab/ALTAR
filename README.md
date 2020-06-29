@@ -48,12 +48,12 @@ Once you have successfully logged in, you will be presented with a 3D image of t
 
 
 Have a look at this example!
-![alt text](images/label_usage.gif)
+![](images/label_usage.gif)
 
 
 ### Editing Settings
 Settings can be changed anytime (either from login page or from label page) by clicking on the icon in the top-left corner of the app window. Simply change the text in the fields and click save.
-![alt text](images/settings_usage.gif)
+![](images/settings_usage.gif)
 
 
 ## Warnings
