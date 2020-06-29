@@ -1,6 +1,23 @@
 QWidget {
     background-color: #3e393b;
 }
+
+QToolBar {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+}
+
+QAction {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+}
+
 QLabel {
     color: white;
     font-size: 22px;

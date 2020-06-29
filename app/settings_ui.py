@@ -1,34 +1,60 @@
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QLineEdit, QWidget,
-                             QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
-                             QProgressBar, QMenu)
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import (QLineEdit, QWidget, QPushButton, QLabel,
+                             QFormLayout)
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QThread, QEvent
-from pyqtgraph import PlotWidget, plot
-import pyqtgraph as pg
-import sys  # We need sys so that we can pass argv to QApplication
 import os
-import io
-import re
-
-
-import time
+import json
 
 
 class SettingsUI(QWidget) :
-    def __init__(self, parent=None):
-        super(AuthenticationUI, self).__init__(parent)
+    def __init__(self, parent=None, settings_file_path="settings.json"):
+        super(SettingsUI, self).__init__(parent)
 
         self.parent = parent
-
-        # Define the distance from top left of screen
-        # (first two ints), x,y size of windows (last two ints)
-        # self.setGeometry(300, 400, 1000, 700)
         self.setStyleSheet(open('app/style.css').read())
+        self.settings_file = settings_file_path
+
+        self.init_ui()
 
 
-        # Enable pressing enter key to do stuff
-        # self.keyPressed.connect(self.on_key_press)
+    def init_ui(self):
+        # Open settings JSON
+        with open(self.settings_file) as json_file:
+            settings = json.load(json_file)
 
-        # Open remote connection to H4H
-        # If this is successful, initUI will be called
-        # self.init_authentiation()
+        # Populate settings form with settings
+        self.fbox = QFormLayout()
+        for key in settings :
+            self.fbox.addRow(QLabel(key), QLineEdit(str(settings[key])))
+
+        # Add save and cancel buttongs
+        b1, b2 = QPushButton("Save"), QPushButton("Cancel")
+        b1.setObjectName("login"), b2.setObjectName("login")
+        b1.clicked.connect(self._on_save_click)
+        b2.clicked.connect(self._on_cancel_click)
+        self.fbox.addRow(b1, b2)
+        self.setLayout(self.fbox)
+
+
+    def _on_save_click(self) :
+        settings_dict = {}
+        # Read all text fields and save in settings json
+        for i in range(self.fbox.count()) :
+            w = self.fbox.itemAt(i).widget()
+            if type(w) is QLabel  :      # This is a settings key
+                k = w.text()
+            elif type(w) is QLineEdit  : # This is a settings value
+                settings_dict[k] = w.text()
+            else :                       # This is a button
+                continue
+        # Save the settings in a JSON file
+        with open(self.settings_file, 'w') as outfile:
+            json.dump(settings_dict, outfile, indent=4)
+
+        # Go back to previously active widget
+        self.parent._on_close_settings()
+
+
+
+    def _on_cancel_click(self) :
+        # Do nothing and go back to previously active widget
+        self.parent._on_close_settings()

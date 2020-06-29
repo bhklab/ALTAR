@@ -37,11 +37,8 @@ class LabelImageApp(object):
         ## ------------------------------- ##
 
         ##  Edit these paths according to your directory sctructure ##
-        # self.img_path = "/cluster/projects/bhklab/RADCURE/img/"                  # Path to image directory
         self.img_path = "/cluster/projects/radiomics/Temp/RADCURE-npy/img"
-        # self.csv_path = "/cluster/home/carrowsm/logs/label/artifact_labels.csv"  # File containing the labels of the images
         self.csv_path = "/cluster/home/carrowsm/data/radcure_DA_labels.csv"
-        # self.tmp_path = "/cluster/home/carrowsm/logs/label/tmp.csv"
         self.tmp_path = "tmp.csv"            # File for temporary saving
         ## -------------------------------------------------------- ##
 
@@ -208,7 +205,7 @@ class LabelImageApp(object):
             self.label_df.at[index, "has_artifact"] = '0'
 
         self.label_df.at[index, "a_slice"] = str(slice)
-        
+
 
         # Save this label to a csv
         print("Saving answer")
