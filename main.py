@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
         # Toolbar bar for editing settings
         toolbar = QToolBar("My main toolbar")
         self.addToolBar(toolbar)
-        button_action = QAction(QIcon("icons/settings.png"), "&Settings", self)
+        button_action = QAction(QIcon("images/settings.png"), "&Settings", self)
         button_action.triggered.connect(self._on_settings_click)
         toolbar.addAction(button_action)
 
