@@ -1,0 +1,167 @@
+QWidget {
+    background-color: #3e393b;
+}
+
+QToolBar {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+}
+
+QAction {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+}
+
+QLabel {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+}
+
+QPushButton {
+    /* width: 200px;
+    height: 40px; */
+    background-color:#3e393b;
+    color: white;
+    font-size:18px;
+    font-family: "Optima", serif;
+    font-weight: 200;
+    border: 0px black none;
+}
+
+QPushButton:hover {
+    /* width: 200px;
+    height: 40px; */
+    background-color:#4a4a4a;
+    color: white;
+    font-size:18px;
+    font-family: "Optima", serif;
+    font-weight: 200;
+    border: 0px black none;
+}
+
+
+QPushButton#input {
+    width: 200px;
+    height: 40px;
+    background-color:#3e393b;
+    color: white;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 200;
+    border: 0px black none;
+}
+
+QPushButton:hover#input{
+    color: white;
+    background-color: #4a4a4a;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border: 0 black none;
+}
+
+QPushButton#label-slice{
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    width: 200px;
+    height: 40px;
+    background-color:#3e393b;
+    color: white;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    /* border: 0px black none; */
+    border-bottom: 2px black solid;
+}
+
+QPushButton#label-slice-center{
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    width: 200px;
+    height: 40px;
+    background-color:#3e393b;
+    color: white;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border-style: solid;
+    border-color: #8a8a8a;
+    border-width: 0px 1px 2px 1px;
+    border-bottom: 2px black solid;
+}
+
+QPushButton:hover#label-slice,:hover#label-slice-center{
+    color: white;
+    background-color: #4a4a4a;
+    font-size:24px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border: 0 black none;
+}
+
+QPushButton#login{
+    height: 1.5em;
+    width: 100px;
+    color: white;
+    background-color: #4a4a4a;
+    font-size:20px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border: 0 black none;
+    border-radius: 6px;
+}
+
+QPushButton:hover#login{
+    height: 1.5em;
+    width: 100px;
+    color: white;
+    background-color: #5c5c5c;
+    font-size:20px;
+    font-family: "Optima", serif;
+    font-weight: 400;
+    border: 0 black none;
+    border-radius: 6px;
+}
+
+QLineEdit {
+    color: white;
+    background-color: #616161;
+    font-size:18px;
+    font-family: "Optima", serif;
+    font-weight: 100;
+    width: 100px;
+    height: 1.5em;
+}
+
+QLabel#loading {
+    color: white;
+    font-size: 22px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+    image: url(loader.gif)
+}
+
+QProgressBar {
+    color: white;
+    height: 1.5em;
+    font-size: 18px;
+    font-family: "Optima", sans-serif;
+    font-weight: normal;
+    border: 0 black none;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #4a4a4a;
+
+}
