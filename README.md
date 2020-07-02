@@ -62,4 +62,3 @@ Settings can be changed anytime (either from login page or from label page) by c
 2. Closing the application while an image is loading (in the background or otherwise) may cause the app to crash without saving.
 
 3. The app should be closed from the GUI, by clicking "x", rather than with a keyboard interrupt from the command line.
->>>>>>> bdb35c31fcbc29bf1d60a935d439035f9c634573
