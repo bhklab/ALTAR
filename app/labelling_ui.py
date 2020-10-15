@@ -8,7 +8,10 @@ import re
 import numpy as np
 import paramiko
 
+import SimpleITK as sitk
+
 from app.label import LabelImageApp
+
 
 
 
@@ -17,20 +20,31 @@ from app.label import LabelImageApp
 class DownloadThread(QThread):
     """A Thread dedicated to a progress bar widget to show
        image download progress."""
-    def __init__(self, sftp, path_to_remote_img, buffer):
+    def __init__(self, sftp, path_to_remote_img, buffer, file_type):
         self.path_to_remote_img = path_to_remote_img
         self.sftp = sftp
         self.buffer = buffer
+        self.load_img = self.get_loading_function(file_type)
+        self.local_tmp = "temp." + file_type
         super().__init__()
     # Send a pyqtSignal with :
     # list = [number of bits transferred, number of bits to transfer]
     notifyProgress = pyqtSignal(list)
 
+    def get_loading_function(self, file_type) :
+        if file_type == "npy" :
+            return np.load
+        elif file_type == "nrrd" :
+            return self.read_nrrd_img
+        else :
+            return NotImplementedError("Must use file type 'npy' or 'nrrd'.")
+
     def run(self) :
         # Download the Image
-        self.sftp.get(self.path_to_remote_img, "tmp.npy", callback=self.status_bar)
-        self.buffer.append((np.load("tmp.npy"), re.search( "([0-9]+)_img.npy",self.path_to_remote_img).group(1)))
-        os.remove("tmp.npy")
+        self.sftp.get(self.path_to_remote_img, self.local_tmp, callback=self.status_bar)
+        self.buffer.append((self.load_img(self.local_tmp), self.path_to_remote_img))
+        # self.buffer.append(np.load(self.local_tmp))
+        os.remove(self.local_tmp)
 
     def status_bar(self, packets_sent, packets_to_send) :
         l = [packets_sent, packets_to_send]
@@ -38,10 +52,15 @@ class DownloadThread(QThread):
         # Notify the progress bar widget of download progress
         self.notifyProgress.emit(l)
 
+    def read_nrrd_img(self, path) :
+        img = sitk.ReadImage(path)
+        img = sitk.Cast(img, sitk.sitkFloat32)
+        return sitk.GetArrayFromImage(img)
+
 
 
 class LabelUI(QWidget):
-    def __init__(self, parent=None, settings_dict=None):
+    def __init__(self, parent=None):
         super(LabelUI, self).__init__(parent)
         self.parent = parent
         self.sftp = parent.sftp
@@ -142,7 +161,7 @@ class LabelUI(QWidget):
     def getPath(self, patientIndex = None, patientId = None):
         if(patientIndex != None):
             patientId = self.app_functions.label_df.loc[patientIndex, "patient_id"]
-        file_name = str(patientId) + "_img.npy"
+        file_name = str(patientId) + '.' + self.parent.settings_dict["Image File Type"]
         return os.path.join(self.app_functions.img_path, file_name)
 
 
@@ -159,7 +178,8 @@ class LabelUI(QWidget):
 
     def loadImage(self, patientIndex = None, patientId = None):
         path = self.getPath(patientId = patientId, patientIndex = patientIndex)
-        self.load = DownloadThread(self.sftp, path, self.buffer)
+        self.load = DownloadThread(self.sftp, path, self.buffer,
+                                   self.parent.settings_dict["Image File Type"])
         self.load.notifyProgress.connect(self.onProgress)
         self.load.start()
 

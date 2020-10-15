@@ -41,6 +41,7 @@ class LabelImageApp(object):
             self.img_path = "/cluster/projects/radiomics/Temp/RADCURE-npy/img"
             self.csv_path = "/cluster/home/carrowsm/data/radcure_DA_labels.csv"
             self.tmp_path = "tmp.csv"            # File for temporary saving
+            self.img_type = "npy"
             ## -------------------------------------------------------- ##
         else :
             self.start_index = int(settings_dict["Start Index"])
@@ -48,6 +49,7 @@ class LabelImageApp(object):
             self.img_path = settings_dict["Remote Image Path"]
             self.csv_path = settings_dict["Remote CSV Path"]
             self.tmp_path = settings_dict["Local Temporary Path"]
+            self.img_type = settings_dict["Image File Type"]
 
 
         # Create the dataframe containing the labels
